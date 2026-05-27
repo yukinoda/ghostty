@@ -200,6 +200,18 @@ extension Ghostty {
                     }
                 }
 
+                // If we're part of a split view and DO have focus, optionally
+                // draw a configurable border to indicate which split is focused.
+                // Opt-in: only renders when focused-split-border-color is set.
+                if isSplit && isFocusedSurface,
+                   let borderColor = ghostty.config.focusedSplitBorderColor {
+                    let width = CGFloat(ghostty.config.focusedSplitBorderWidth)
+                    Rectangle()
+                        .strokeBorder(borderColor, lineWidth: width)
+                        .allowsHitTesting(false)
+                        .opacity(ghostty.config.focusedSplitBorderOpacity)
+                }
+
                 #if canImport(AppKit)
                 // Grab handle for dragging the window. We want this to appear at the very
                 // top Z-index os it isn't faded by the unfocused overlay.
