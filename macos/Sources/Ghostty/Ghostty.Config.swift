@@ -532,6 +532,36 @@ extension Ghostty {
             )
         }
 
+        var focusedSplitBorderColor: Color? {
+            guard let config = self.config else { return nil }
+            var color: ghostty_config_color_s = .init()
+            let key = "focused-split-border-color"
+            guard ghostty_config_get(config, &color, key, UInt(key.lengthOfBytes(using: .utf8))) else {
+                return nil
+            }
+            return .init(
+                red: Double(color.r) / 255,
+                green: Double(color.g) / 255,
+                blue: Double(color.b) / 255
+            )
+        }
+
+        var focusedSplitBorderWidth: UInt8 {
+            guard let config = self.config else { return 1 }
+            var width: UInt8 = 1
+            let key = "focused-split-border-width"
+            _ = ghostty_config_get(config, &width, key, UInt(key.lengthOfBytes(using: .utf8)))
+            return width
+        }
+
+        var focusedSplitBorderOpacity: Double {
+            guard let config = self.config else { return 1.0 }
+            var opacity: Double = 1.0
+            let key = "focused-split-border-opacity"
+            _ = ghostty_config_get(config, &opacity, key, UInt(key.lengthOfBytes(using: .utf8)))
+            return opacity
+        }
+
         var splitDividerColor: Color {
             let backgroundColor = OSColor(backgroundColor)
             let isLightBackground = backgroundColor.isLightColor
