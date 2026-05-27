@@ -1086,6 +1086,39 @@ palette: Palette = .{},
 /// Available since: 1.1.0
 @"split-divider-color": ?Color = null,
 
+/// The color of the border drawn around the focused split. When unset
+/// (the default), no border is rendered — this feature is opt-in.
+/// To enable, set any color.
+///
+/// This is independent of `unfocused-split-opacity`; both can be used
+/// together (e.g. opacity = 1.0 with a visible focus border).
+///
+/// Currently only honored on macOS. On other platforms this key is
+/// accepted but has no effect.
+///
+/// Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
+///
+/// Available since: 1.3.0
+@"focused-split-border-color": ?Color = null,
+
+/// Width of the focused-split border. The value is in points, meaning it
+/// will be scaled appropriately for screen DPI — consistent with
+/// `window-padding-x`/`window-padding-y`. Has no effect if
+/// `focused-split-border-color` is unset. Clamped to 0–16.
+///
+/// Currently only honored on macOS.
+///
+/// Available since: 1.3.0
+@"focused-split-border-width": u8 = 1,
+
+/// Opacity of the focused-split border, 0.0–1.0. Has no effect if
+/// `focused-split-border-color` is unset. Clamped to 0.0–1.0.
+///
+/// Currently only honored on macOS.
+///
+/// Available since: 1.3.0
+@"focused-split-border-opacity": f64 = 1.0,
+
 /// Control when Ghostty preserves a zoomed split. Under normal circumstances,
 /// any operation that changes focus or layout of the split tree in a window
 /// will unzoom any zoomed split. This configuration allows you to control
@@ -4675,6 +4708,8 @@ pub fn finalize(self: *Config) !void {
 
     // Clamp our split opacity
     self.@"unfocused-split-opacity" = @min(1.0, @max(0.15, self.@"unfocused-split-opacity"));
+    self.@"focused-split-border-width" = @min(16, self.@"focused-split-border-width");
+    self.@"focused-split-border-opacity" = @min(1.0, @max(0.0, self.@"focused-split-border-opacity"));
 
     // Clamp our contrast
     self.@"minimum-contrast" = @min(21, @max(1, self.@"minimum-contrast"));
