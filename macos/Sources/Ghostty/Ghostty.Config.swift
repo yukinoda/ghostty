@@ -548,10 +548,13 @@ extension Ghostty {
 
         var focusedSplitBorderWidth: UInt8 {
             guard let config = self.config else { return 1 }
-            var width: UInt8 = 1
+            // Zig's c_get dispatch for u8/u32 writes through a *c_uint pointer
+            // (see src/config/c_get.zig), so the buffer we pass MUST be c_uint
+            // sized & aligned — passing &UInt8 trips Zig's @alignCast safety check.
+            var width: CUnsignedInt = 1
             let key = "focused-split-border-width"
             _ = ghostty_config_get(config, &width, key, UInt(key.lengthOfBytes(using: .utf8)))
-            return width
+            return UInt8(clamping: width)
         }
 
         var focusedSplitBorderOpacity: Double {

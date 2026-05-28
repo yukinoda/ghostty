@@ -29,6 +29,8 @@ struct TerminalSplitTreeView: View {
     let tree: SplitTree<Ghostty.SurfaceView>
     let action: (TerminalSplitOperation) -> Void
 
+    @EnvironmentObject private var ghostty: Ghostty.App
+
     var body: some View {
         if let node = tree.zoomed ?? tree.root {
             TerminalSplitSubtreeView(
@@ -40,7 +42,70 @@ struct TerminalSplitTreeView: View {
             // the tree structure of splits it could result in bad behaviors.
             // See: https://github.com/ghostty-org/ghostty/issues/7546
             .id(node.structuralIdentity)
+            // Establish a coordinate space so nested leaves can publish their
+            // bounding rect in a stable frame of reference.
+            .coordinateSpace(name: TerminalSplitTreeView.coordinateSpaceName)
+            // Draw the focused-split border on top of the entire tree (above
+            // every divider, regardless of nesting depth). The rect comes from
+            // the deepest focused leaf via FocusedLeafBoundsKey.
+            .overlayPreferenceValue(FocusedLeafBoundsKey.self) { rect in
+                // Only render the focus border when the tree actually has
+                // splits (not a single leaf). Mirrors the original `isSplit`
+                // guard from SurfaceView.
+                if case .split = node,
+                   let rect,
+                   let color = ghostty.config.focusedSplitBorderColor {
+                    FocusedSplitBorder(
+                        rect: rect,
+                        color: color,
+                        width: CGFloat(ghostty.config.focusedSplitBorderWidth),
+                        opacity: ghostty.config.focusedSplitBorderOpacity)
+                        .allowsHitTesting(false)
+                }
+            }
         }
+    }
+
+    static let coordinateSpaceName: String = "TerminalSplitTreeView"
+}
+
+/// Carries the bounding rect of the focused split leaf (if any) up to the
+/// TerminalSplitTreeView so it can render the focus border on top of the
+/// entire tree — above every divider, regardless of split nesting depth.
+private struct FocusedLeafBoundsKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = value ?? nextValue()
+    }
+}
+
+/// Renders a rectangular border at the given rect using four edge-anchored
+/// filled bars. Positioned absolutely in the parent's coordinate space via
+/// .offset, so it sits on top of all dividers and avoids the subpixel
+/// fade-out that .strokeBorder suffers on fractional-point bounds.
+private struct FocusedSplitBorder: View {
+    let rect: CGRect
+    let color: Color
+    let width: CGFloat
+    let opacity: Double
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Rectangle().fill(color)
+                .frame(width: rect.width, height: width)
+                .offset(x: rect.minX, y: rect.minY)
+            Rectangle().fill(color)
+                .frame(width: rect.width, height: width)
+                .offset(x: rect.minX, y: rect.maxY - width)
+            Rectangle().fill(color)
+                .frame(width: width, height: rect.height)
+                .offset(x: rect.minX, y: rect.minY)
+            Rectangle().fill(color)
+                .frame(width: width, height: rect.height)
+                .offset(x: rect.maxX - width, y: rect.minY)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .opacity(opacity)
     }
 }
 
@@ -93,6 +158,11 @@ private struct TerminalSplitLeaf: View {
 
     @State private var dropState: DropState = .idle
     @State private var isSelfDragging: Bool = false
+    @Environment(\.ghosttyLastFocusedSurface) private var lastFocusedSurface
+
+    private var isFocused: Bool {
+        lastFocusedSurface?.value === surfaceView
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -117,6 +187,18 @@ private struct TerminalSplitLeaf: View {
                 if !isSelfDragging, case .dropping(let zone) = dropState {
                     zone.overlay(in: geometry)
                         .allowsHitTesting(false)
+                }
+            }
+            // Publish our bounding rect (in the TerminalSplitTreeView's
+            // coordinate space) when our surface is the focused one, so the
+            // root can draw a border around us on top of every divider.
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: FocusedLeafBoundsKey.self,
+                        value: isFocused
+                            ? proxy.frame(in: .named(TerminalSplitTreeView.coordinateSpaceName))
+                            : nil)
                 }
             }
             .onPreferenceChange(Ghostty.DraggingSurfaceKey.self) { value in
