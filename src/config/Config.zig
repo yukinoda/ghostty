@@ -1098,7 +1098,7 @@ palette: Palette = .{},
 ///
 /// Specified as either hex (`#RRGGBB` or `RRGGBB`) or a named X11 color.
 ///
-/// Available since: 1.3.0
+/// Available since: 1.4.0
 @"focused-split-border-color": ?Color = null,
 
 /// Width of the focused-split border. The value is in points, meaning it
@@ -1108,7 +1108,7 @@ palette: Palette = .{},
 ///
 /// Currently only honored on macOS.
 ///
-/// Available since: 1.3.0
+/// Available since: 1.4.0
 @"focused-split-border-width": u8 = 1,
 
 /// Opacity of the focused-split border, 0.0–1.0. Has no effect if
@@ -1116,7 +1116,7 @@ palette: Palette = .{},
 ///
 /// Currently only honored on macOS.
 ///
-/// Available since: 1.3.0
+/// Available since: 1.4.0
 @"focused-split-border-opacity": f64 = 1.0,
 
 /// Control when Ghostty preserves a zoomed split. Under normal circumstances,
